@@ -87,10 +87,12 @@ module.exports = function trace(options, loaderConfig) {
 
       // Pull out the list of IDs for this layer as the return value.
       var paths = context._layer.buildFilePaths,
-          idMap = context._layer.buildFileToModule;
+          idMap = context._layer.buildFileToModule,
+          registry = context._registryBackup;
 
       var result = paths.map(function(filePath) {
-        var id = idMap[filePath];
+        var id = idMap[filePath],
+            module = registry[id];
         // If a loader plugin, try to guess the path instead of use the ID as
         // the filePath.
         if (id.indexOf('!') !== -1) {
@@ -155,6 +157,17 @@ module.exports = function trace(options, loaderConfig) {
           }
 
           item.contents = contents;
+        }
+
+        if (module) {
+          if (module.map && module.map.parentMap) {
+            item.parent = module.map.parentMap.id;
+          }
+          if (module.map && module.depMaps) {
+            item.dependencies = module.depMaps.map(function (module) {
+              return module.id;
+            });
+          }
         }
 
         return item;
